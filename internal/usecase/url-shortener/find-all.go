@@ -1,6 +1,7 @@
 package urlShortener
 
 import (
+	"github.com/FRSiqueiraBR/url-shortener/internal/dto"
 	"github.com/FRSiqueiraBR/url-shortener/internal/entity"
 	"github.com/FRSiqueiraBR/url-shortener/internal/infra/database"
 )
@@ -20,11 +21,22 @@ func NewFindAllShortUrls(urlRepository database.UrlRepositoryInterface) *FindAll
 	}
 }
 
-func (f *FindAllShortUrls) FindAll() (*[]entity.ShortUrl, error) {
+func (f *FindAllShortUrls) FindAll() (*[]dto.Surl, error) {
 	entities, err := f.UrlRepository.FindAll()
 	if err != nil {
 		return nil, err
 	}
 
-	return entities, err
+	var dtos []dto.Surl
+
+	for _, ent := range *entities {
+		surl, err := ent.ToDTO()
+		if err != nil {
+			return nil, err
+		}
+		
+		dtos = append(dtos, *surl)
+    }
+
+	return &dtos, err
 }

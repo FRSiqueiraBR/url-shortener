@@ -2,19 +2,20 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
+	"net/http"
 	"os"
-	"time"
 
+	"github.com/FRSiqueiraBR/url-shortener/internal/controller"
 	"github.com/FRSiqueiraBR/url-shortener/internal/infra/database"
-	usecaseUrlShortener "github.com/FRSiqueiraBR/url-shortener/internal/usecase/url-shortener"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
-	goDotEnvVariable("HOST")
+	loadEnvVariables()
 
 	db, err := sql.Open("sqlite3", "infra/database/UrlShortener.db")
 	if err != nil {
@@ -24,28 +25,23 @@ func main() {
 	defer db.Close() //espera tudo rodar depois executa o close
 
 	urlRespository := database.NewUrlRepository(db)
-	ucSave := usecaseUrlShortener.NewSaveUrlShort(urlRespository)
-	ucFindAll := usecaseUrlShortener.NewFindAllShortUrls(urlRespository)
+	surlController := controller.NewSurlController(urlRespository)
 
-	_, err = ucSave.Save("https://google.com.br", "192.168.0.1", time.Date(2099, time.December, 23, 59, 59, 0, 0, time.UTC))
-	if err != nil {
-		panic(err)
-	}
+	r := chi.NewRouter()
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+	r.Get("/surl", surlController.FindAll)
+	r.Post("/surl", surlController.Create)
 
-	entities, err := ucFindAll.FindAll()
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(entities)
+	http.ListenAndServe(os.Getenv("HOST"), r)
 }
 
-func goDotEnvVariable(key string) string {
+func loadEnvVariables() {
 	err := godotenv.Load(".env")
 
 	if err != nil {
 		panic("Error loading .env file")
 	}
-
-	return os.Getenv(key)
 }

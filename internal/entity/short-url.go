@@ -3,6 +3,8 @@ package entity
 import (
 	"errors"
 	"time"
+
+	"github.com/FRSiqueiraBR/url-shortener/internal/dto"
 )
 
 type shortUrlInteface interface {
@@ -40,4 +42,8 @@ func (u *ShortUrl) Validate() error {
 	}
 
 	return nil
+}
+
+func (u *ShortUrl) ToDTO() (*dto.Surl, error) {
+	return dto.NewSurl(u.Long, u.Hash, u.Expiration, u.Timestamp)
 }
